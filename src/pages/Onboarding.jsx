@@ -409,8 +409,8 @@ export default function Onboarding() {
   const goNext = () => { setDir(1); setStep(s => s + 1); };
   const goBack = () => { setDir(-1); setStep(s => s - 1); };
 
-  const finish = () => {
-    completeOnboarding(data);
+  const finish = async () => {
+    await completeOnboarding(data);
     navigate('/app');
   };
 
