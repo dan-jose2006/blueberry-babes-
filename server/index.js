@@ -57,7 +57,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 // ── Health Check ──────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({
     success: true,
     status: 'CampusFlow API is running',
@@ -80,12 +80,14 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // ── Start Server ──────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  logger.info(`CampusFlow API running on http://localhost:${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`Supabase: ${process.env.SUPABASE_URL}`);
-  logger.info(`Groq AI: ${process.env.GROQ_API_KEY ? 'Configured' : 'NOT configured — add GROQ_API_KEY to .env'}`);
-  logger.info(`n8n Task Webhook: ${process.env.N8N_TASK_WEBHOOK || 'NOT configured'}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info(`CampusFlow API running on http://localhost:${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`Supabase: ${process.env.SUPABASE_URL}`);
+    logger.info(`Groq AI: ${process.env.GROQ_API_KEY ? 'Configured' : 'NOT configured — add GROQ_API_KEY to .env'}`);
+    logger.info(`n8n Task Webhook: ${process.env.N8N_TASK_WEBHOOK || 'NOT configured'}`);
+  });
+}
 
 module.exports = app;
