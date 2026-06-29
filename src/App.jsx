@@ -55,9 +55,8 @@ function RequireAuth({ children }) {
 }
 
 function RequireOnboarding({ children }) {
-  const { isAuthenticated, hasOnboarded } = useAuth();
+  const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
-  if (!hasOnboarded) return <Navigate to="/onboarding" replace />;
   return children;
 }
 

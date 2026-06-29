@@ -71,12 +71,12 @@ export function AuthProvider({ children }) {
       return { success: true };
     }
 
-    // 4. Brand new user — needs to onboard
+    // 4. Brand new user — bypass onboarding by default
     const newUser = {
       email,
       name: email.split('@')[0],
       avatar: email[0].toUpperCase(),
-      onboarded: false,
+      onboarded: true,
     };
     setUser(newUser);
     return { success: true };
@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
 
   const register = async (name, email, password) => {
     await new Promise(r => setTimeout(r, 1400));
-    const newUser = { email, name, avatar: name[0].toUpperCase(), onboarded: false };
+    const newUser = { email, name, avatar: name[0].toUpperCase(), onboarded: true };
     setUser(newUser);
     return { success: true };
   };
