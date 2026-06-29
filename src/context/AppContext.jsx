@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { deadlines as initialDeadlines, attendanceData as initialAttendance, notifications as initialNotifications } from '../data/mockData';
 import { tasksAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
+  const { user } = useAuth();
   const [activeView, setActiveView] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -14,6 +16,29 @@ export function AppProvider({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedDeadline, setSelectedDeadline] = useState(null);
+
+  // Fetch student's real tasks/deadlines from the Supabase backend on load
+  React.useEffect(() => {
+    async function fetchUserTasks() {
+      try {
+        const user = JSON.parse(localStorage.getItem('cf_user') || 'null');
+        if (user && user.email) {
+          const response = await tasksAPI.getAll(user.email);
+          if (response && response.success && response.tasks && response.tasks.length > 0) {
+            // Merge loaded tasks from DB with mock ones if they aren't duplicate
+            setDeadlines(prev => {
+              const existingIds = new Set(response.tasks.map(t => t.id));
+              const filteredPrev = prev.filter(p => !existingIds.has(p.id));
+              return [...response.tasks, ...filteredPrev];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[CampusFlow] Could not fetch real tasks from backend:', err.message);
+      }
+    }
+    fetchUserTasks();
+  }, [user]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
