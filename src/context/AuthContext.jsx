@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     await new Promise(r => setTimeout(r, 1200));
 
+    // 1. Try to fetch existing student profile from Supabase
     let dbUser = null;
     try {
       const response = await studentsAPI.getByEmail(email);
@@ -52,16 +53,32 @@ export function AuthProvider({ children }) {
         };
       }
     } catch (err) {
-      console.warn('Could not fetch student profile from Supabase on login:', err.message);
+      console.warn('[CampusFlow] Could not fetch student profile on login:', err.message);
     }
 
-    const existingUser = loadUser();
-    // Fallback to local storage or create a basic user object with onboarded: false
-    const restoredUser = dbUser || (existingUser?.email === email
-      ? existingUser
-      : { email, name: email.split('@')[0], avatar: email[0].toUpperCase(), onboarded: false });
+    // 2. If found in DB — use DB data (they've onboarded before)
+    if (dbUser) {
+      setUser(dbUser);
+      return { success: true };
+    }
 
-    setUser(restoredUser);
+    // 3. Not in DB — check localStorage for same email (e.g. recently onboarded
+    //    but save to DB failed, or mid-session). Keep their onboarded status.
+    const existingUser = loadUser();
+    if (existingUser && existingUser.email === email) {
+      // Re-authenticate with whatever state they had (preserves onboarded: true)
+      setUser(existingUser);
+      return { success: true };
+    }
+
+    // 4. Brand new user — needs to onboard
+    const newUser = {
+      email,
+      name: email.split('@')[0],
+      avatar: email[0].toUpperCase(),
+      onboarded: false,
+    };
+    setUser(newUser);
     return { success: true };
   };
 
@@ -93,6 +110,10 @@ export function AuthProvider({ children }) {
       onboarded: true,
     };
 
+    // Save to localStorage FIRST so the user lands on dashboard even if API is slow
+    setUser(updated);
+
+    // Then persist to Supabase (best-effort — don't block the UI)
     try {
       await studentsAPI.create({
         name: updated.name,
@@ -102,14 +123,16 @@ export function AuthProvider({ children }) {
         semester: updated.semester,
         rollNo: updated.rollNo,
       });
+      console.log('[CampusFlow] Student profile saved to Supabase successfully.');
     } catch (err) {
-      console.error('Failed to save student profile in Supabase during onboarding:', err);
+      console.error('[CampusFlow] Failed to save student profile to Supabase:', err.message);
+      // Not fatal — user is already in localStorage with onboarded: true
     }
-
-    setUser(updated);
   };
 
   const logout = () => {
+    // Clear auth state but keep a minimal record so returning users
+    // can be matched by email in login step 3 above.
     setUser(null);
   };
 
