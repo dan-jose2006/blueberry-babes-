@@ -1,7 +1,5 @@
 'use strict';
 
-const logger = require('../utils/logger');
-
 /**
  * Global Express error handler.
  * Must be the LAST middleware registered with app.use().
@@ -10,7 +8,7 @@ function errorHandler(err, req, res, _next) {
   const status = err.status || err.statusCode || 500;
   const message = err.message || 'Internal server error';
 
-  logger.error(`[${req.method} ${req.path}] ${status} — ${message}`);
+  console.error(`[CampusFlow] [${req.method} ${req.path}] ${status} — ${message}`);
 
   if (process.env.NODE_ENV === 'development') {
     return res.status(status).json({

@@ -1,12 +1,24 @@
 'use strict';
 
-const supabase = require('../config/supabase');
-const logger = require('../utils/logger');
+const _supabase = require('../config/supabase');
+
+// Provide a clear error if env vars are missing rather than a cryptic null crash
+function getClient() {
+  if (!_supabase) {
+    throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables.');
+  }
+  return _supabase;
+}
+
+const logger = { 
+  info: (...a) => console.log('[INFO]', ...a),
+  error: (...a) => console.error('[ERROR]', ...a),
+};
 
 // ── Students ──────────────────────────────────────────────────────────────────
 
 async function createStudent(data) {
-  const { data: student, error } = await supabase
+  const { data: student, error } = await getClient()
     .from('students')
     .insert([{
       name: data.name.trim(),
@@ -27,7 +39,7 @@ async function createStudent(data) {
 }
 
 async function getStudentByEmail(email) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('students')
     .select('*')
     .eq('email', email.toLowerCase())
@@ -41,7 +53,7 @@ async function getStudentByEmail(email) {
 }
 
 async function upsertStudent(data) {
-  const { data: student, error } = await supabase
+  const { data: student, error } = await getClient()
     .from('students')
     .upsert([{
       name: data.name.trim(),
@@ -64,7 +76,7 @@ async function upsertStudent(data) {
 // ── Tasks ─────────────────────────────────────────────────────────────────────
 
 async function createTask(data) {
-  const { data: task, error } = await supabase
+  const { data: task, error } = await getClient()
     .from('tasks')
     .insert([{
       student_id: data.studentId || null,
@@ -91,7 +103,7 @@ async function createTask(data) {
 }
 
 async function getTasks(studentId = null) {
-  let query = supabase
+  let query = getClient()
     .from('tasks')
     .select('*')
     .order('deadline', { ascending: true });
@@ -109,7 +121,7 @@ async function getTasks(studentId = null) {
 }
 
 async function getTaskById(id) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('tasks')
     .select('*')
     .eq('id', id)
@@ -142,7 +154,7 @@ async function updateTask(id, updates) {
   if (updates.aiStats !== undefined) patch.ai_stats = updates.aiStats;
   patch.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('tasks')
     .update(patch)
     .eq('id', id)
@@ -158,7 +170,7 @@ async function updateTask(id, updates) {
 }
 
 async function deleteTask(id) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('tasks')
     .delete()
     .eq('id', id);
@@ -174,7 +186,7 @@ async function deleteTask(id) {
 // ── Automation Logs ───────────────────────────────────────────────────────────
 
 async function logAutomation({ taskId, webhookType, status, payload, response }) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('automation_logs')
     .insert([{
       task_id: taskId,
@@ -195,7 +207,7 @@ async function logAutomation({ taskId, webhookType, status, payload, response })
 }
 
 async function getAutomationLogs(taskId = null) {
-  let query = supabase
+  let query = getClient()
     .from('automation_logs')
     .select('*')
     .order('created_at', { ascending: false });
