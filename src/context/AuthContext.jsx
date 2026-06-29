@@ -115,7 +115,7 @@ export function AuthProvider({ children }) {
 
     // Then persist to Supabase (best-effort — don't block the UI)
     try {
-      await studentsAPI.create({
+      const response = await studentsAPI.create({
         name: updated.name,
         email: updated.email,
         phone: updated.phone,
@@ -123,10 +123,12 @@ export function AuthProvider({ children }) {
         semester: updated.semester,
         rollNo: updated.rollNo,
       });
-      console.log('[CampusFlow] Student profile saved to Supabase successfully.');
+      console.log('[CampusFlow] Student profile saved to Supabase successfully:', response);
     } catch (err) {
-      console.error('[CampusFlow] Failed to save student profile to Supabase:', err.message);
-      // Not fatal — user is already in localStorage with onboarded: true
+      console.error('[CampusFlow] Failed to save student profile to Supabase:', err);
+      if (err.response) {
+        console.error('[CampusFlow] Error response details:', err.response.data);
+      }
     }
   };
 
